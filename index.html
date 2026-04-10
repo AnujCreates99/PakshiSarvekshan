@@ -1,1 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pakshi Sarvekshan - Bird Survey</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; min-height: 100vh; background: #f7f5f0; display: flex; flex-direction: column; }
+    
+    /* Utility Styles */
+    .nav-link { color: #b5c9a8; font-family: 'DM Sans', sans-serif; font-size: .875rem; font-weight: 500; padding: 6px 12px; border-radius: 20px; text-decoration: none; cursor: pointer; transition: all .2s; border: none; background: none; }
+    .nav-link:hover { color: #fff; background: rgba(255,255,255,.1); }
+    .nav-link.active { color: #f5e6b8; background: rgba(245,230,184,.12); }
+    
+    .bird-card { background: #fff; border-radius: 16px; border: 1px solid #e0e0d8; overflow: hidden; cursor: pointer; transition: transform .25s, box-shadow .25s; }
+    .bird-card:hover { transform: translateY(-6px); box-shadow: 0 12px 36px rgba(26,58,42,.16); border-color: #7aab6e; }
+    
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: .72rem; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+    .source-pill { display: block; padding: 10px 14px; background: #fff; border: 1.5px solid #c8d0cb; border-radius: 10px; font-size: .82rem; font-weight: 500; color: #2d5a3d; text-decoration: none; transition: all .2s; cursor: pointer; }
+    .source-pill:hover { background: #1a3a2a; color: #f5e6b8; border-color: #1a3a2a; }
+    
+    .btn-primary { background: #2d5a3d; color: #fff; border: none; border-radius: 30px; padding: 12px 26px; font-size: .9rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; }
+    .btn-primary:hover { background: #1a3a2a; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,58,42,.25); }
+    
+    .btn-amber { background: #e8973a; color: #1a3a2a; border: none; border-radius: 30px; padding: 12px 26px; font-size: .9rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; }
+    .btn-amber:hover { background: #f5e6b8; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(232,151,58,.3); }
+    
+    .field-input, .field-select, .field-textarea { width: 100%; padding: 10px 14px; border: 1.5px solid #c8d0cb; border-radius: 10px; font-size: .9rem; font-family: 'DM Sans', sans-serif; background: #f7f5f0; outline: none; transition: border-color .2s; }
+    .field-input:focus, .field-select:focus, .field-textarea:focus { border-color: #2d5a3d; box-shadow: 0 0 0 3px rgba(45,90,61,.1); }
+    
+    .habit-chip { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1.5px solid #c8d0cb; border-radius: 10px; font-size: .8rem; cursor: pointer; transition: all .15s; font-family: 'DM Sans', sans-serif; background: #fff; }
+    .habit-chip.selected { border-color: #2d5a3d; background: #e8f2ec; color: #1a3a2a; font-weight: 600; }
+    
+    .threat-chip { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1.5px solid #c8d0cb; border-radius: 10px; font-size: .8rem; cursor: pointer; transition: all .15s; font-family: 'DM Sans', sans-serif; background: #fff; }
+    .threat-chip.selected { border-color: #c4622d; background: #fff3ee; color: #c4622d; font-weight: 600; }
+    
+    .modal-overlay { position: fixed; inset: 0; background: rgba(10,25,15,.65); backdrop-filter: blur(6px); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn .2s ease; }
+    .modal { background: #fff; border-radius: 24px; width: 100%; max-width: 640px; max-height: 88vh; overflow-y: auto; animation: slideUp .25s ease; }
+    
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    
+    .page-enter { animation: fadeUp .4s ease; display: none; }
+    .page-enter.active { display: block; }
+    
+    .stat-card { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); border-radius: 16px; padding: 24px; text-align: center; }
+    
+    ::-webkit-scrollbar { width: 5px }
+    ::-webkit-scrollbar-track { background: #f0f0ea }
+    ::-webkit-scrollbar-thumb { background: #7aab6e; border-radius: 3px }
+  </style>
+</head>
+<body style="font-family:'Georgia', serif; min-height:100vh; background:#f7f5f0; display:flex; flex-direction:column;">
 
+  <nav style="background:#1a3a2a; border-bottom:2px solid #4a7c5e; position:sticky; top:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,.2);">
+    <div style="max-width:1180px; margin:0 auto; padding:0 24px; height:66px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:8px; cursor:pointer;" onclick="navigate('home')">
+        <span style="font-size:1.4rem;">🐦</span>
+        <span style="font-family:'Playfair Display',serif; font-size:1.15rem; font-weight:700; color:#f5e6b8; letter-spacing:.02em;">Pakshi Sarvekshan</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <button id="nav-home" class="nav-link active" onclick="navigate('home')">Home</button>
+        <button id="nav-birds" class="nav-link" onclick="navigate('birds')">Birds</button>
+        <button id="nav-report" class="nav-link" onclick="navigate('report')">Report</button>
+        <button id="nav-dashboard" class="nav-link" onclick="navigate('dashboard')">Dashboard</button>
+        <button id="nav-about" class="nav-link" onclick="navigate('about')">About</button>
+        <button class="btn-amber" style="margin-left:8px; padding:8px 18px; font-size:.82rem;" onclick="navigate('report')">+ Report Sighting</button>
+      </div>
+    </div>
+  </nav>
+
+  <main style="flex:1;">
+    
+    <div id="page-home" class="page-enter active">
+      <section style="background:linear-gradient(135deg, #1a3a2a 0%, #2d5a3d 60%, #1a3a2a 100%); padding:80px 24px 72px; position:relative; overflow:hidden;">
+        <div style="position:absolute; inset:0; background-image:radial-gradient(circle at 80% 20%, rgba(74,124,94,.35) 0%,transparent 55%), radial-gradient(circle at 15% 80%, rgba(122,171,110,.18) 0%,transparent 45%); pointer-events:none;"></div>
+        <div style="max-width:760px; margin:0 auto; position:relative;">
+          <span style="display:inline-block; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.14em; color:#7aab6e; padding:4px 14px; border:1px solid rgba(122,171,110,.3); border-radius:20px; margin-bottom:20px; font-family:'DM Sans',sans-serif;">Abhyuday Samarpan · Jabalpur, MP</span>
+          <h1 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:clamp(2.2rem,5vw,3.8rem); line-height:1.1; margin-bottom:20px;">Pakshi Sarvekshan</h1>
+          <p style="font-size:1.08rem; color:#b5c9a8; line-height:1.75; max-width:600px; margin-bottom:20px; font-family:'DM Sans',sans-serif;">A citizen-powered platform to map bird distribution in Jabalpur and scientifically understand the environmental factors behind their survival and decline.</p>
+          <div style="padding:14px 18px; border-left:3px solid #e8973a; background:rgba(255,255,255,.05); border-radius:0 10px 10px 0; margin-bottom:32px; max-width:580px;">
+            <span style="font-size:.78rem; font-weight:700; color:#e8973a; font-family:'DM Sans',sans-serif; text-transform:uppercase; letter-spacing:.06em;">Research Question: </span>
+            <span style="font-size:.9rem; color:#c8d0cb; font-style:italic; font-family:'DM Sans',sans-serif;">Which native birds of Jabalpur are declining, where are they sighted, and what factors are responsible?</span>
+          </div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="btn-amber" onclick="navigate('report')">🐦 Report a Sighting</button>
+            <button class="btn-primary" style="background:rgba(255,255,255,.1); border:1.5px solid rgba(181,201,168,.4);" onclick="navigate('birds')">View Bird Directory</button>
+          </div>
+        </div>
+      </section>
+
+      <section style="background:#2d5a3d; padding:20px 24px;">
+        <div style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+          <div class="stat-card">
+            <div id="stat-total-birds" style="font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; color:#f5e6b8; line-height:1;">12</div>
+            <div style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:#7aab6e; margin-top:6px; font-family:'DM Sans',sans-serif;">Birds Tracked</div>
+          </div>
+          <div class="stat-card">
+            <div id="stat-declining-birds" style="font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; color:#f5e6b8; line-height:1;">7</div>
+            <div style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:#7aab6e; margin-top:6px; font-family:'DM Sans',sans-serif;">Species Declining</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; color:#f5e6b8; line-height:1;">16</div>
+            <div style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:#7aab6e; margin-top:6px; font-family:'DM Sans',sans-serif;">Jabalpur Zones</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; color:#f5e6b8; line-height:1;">2023</div>
+            <div style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:#7aab6e; margin-top:6px; font-family:'DM Sans',sans-serif;">SoIB Reference Year</div>
+          </div>
+        </div>
+      </section>
+
+      <section style="padding:72px 24px; background:#f7f5f0;">
+        <div style="max-width:1100px; margin:0 auto;">
+          <div style="margin-bottom:48px;">
+            <h2 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:2rem; margin-bottom:12px;">High Priority Species</h2>
+            <p style="color:#7a8580; font-family:'DM Sans',sans-serif; font-size:.95rem;">These birds are in serious decline in Jabalpur. Your sightings help build a scientific picture.</p>
+          </div>
+          <div id="home-priority-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px;">
+            </div>
+          <div style="text-align:center; margin-top:40px;">
+            <button class="btn-primary" onclick="navigate('birds')">See All 12 Birds →</button>
+          </div>
+        </div>
+      </section>
+
+      <section style="padding:72px 24px; background:#1a3a2a;">
+        <div style="max-width:1100px; margin:0 auto;">
+          <h2 style="font-family:'Playfair Display',serif; color:#f5e6b8; text-align:center; margin-bottom:48px; font-size:2rem;">How It Works</h2>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+            <div style="background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; text-align:center;">
+              <div style="font-size:.68rem; font-weight:700; color:#e8973a; letter-spacing:.12em; font-family:'DM Sans',sans-serif; margin-bottom:8px;">01</div>
+              <div style="font-size:2rem; margin-bottom:10px;">🔍</div>
+              <h4 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:1rem; margin-bottom:8px;">Spot a Bird</h4>
+              <p style="font-size:.82rem; color:#7aab6e; line-height:1.65; font-family:'DM Sans',sans-serif;">See a bird in Jabalpur — garden, water body, rooftop, forest edge.</p>
+            </div>
+            <div style="background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; text-align:center;">
+              <div style="font-size:.68rem; font-weight:700; color:#e8973a; letter-spacing:.12em; font-family:'DM Sans',sans-serif; margin-bottom:8px;">02</div>
+              <div style="font-size:2rem; margin-bottom:10px;">📝</div>
+              <h4 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:1rem; margin-bottom:8px;">Report It</h4>
+              <p style="font-size:.82rem; color:#7aab6e; line-height:1.65; font-family:'DM Sans',sans-serif;">Fill our simple 6-step form with bird, location, habitat, and count.</p>
+            </div>
+            <div style="background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; text-align:center;">
+              <div style="font-size:.68rem; font-weight:700; color:#e8973a; letter-spacing:.12em; font-family:'DM Sans',sans-serif; margin-bottom:8px;">03</div>
+              <div style="font-size:2rem; margin-bottom:10px;">⚠️</div>
+              <h4 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:1rem; margin-bottom:8px;">Note Threats</h4>
+              <p style="font-size:.82rem; color:#7aab6e; line-height:1.65; font-family:'DM Sans',sans-serif;">Tell us what environmental threats you notice in that area.</p>
+            </div>
+            <div style="background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; text-align:center;">
+              <div style="font-size:.68rem; font-weight:700; color:#e8973a; letter-spacing:.12em; font-family:'DM Sans',sans-serif; margin-bottom:8px;">04</div>
+              <div style="font-size:2rem; margin-bottom:10px;">📊</div>
+              <h4 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:1rem; margin-bottom:8px;">Build the Map</h4>
+              <p style="font-size:.82rem; color:#7aab6e; line-height:1.65; font-family:'DM Sans',sans-serif;">Your dot appears on our live Jabalpur sighting map and dashboard.</p>
+            </div>
+          </div>
+          <div style="text-align:center; margin-top:40px;">
+            <button class="btn-amber" onclick="navigate('report')">Start Reporting →</button>
+          </div>
+        </div>
+      </section>
+
+      <section style="padding:72px 24px; background:#e8f0e3;">
+        <div style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start;">
+          <div>
+            <h2 style="font-family:'Playfair Display',serif; color:#1a3a2a; margin-bottom:16px; font-size:1.8rem;">Grounded in Official Research</h2>
+            <p style="font-family:'DM Sans',sans-serif; color:#3a4040; line-height:1.8; margin-bottom:12px;">Built on <strong>State of India's Birds 2023</strong> — 30 million observations by 30,000 birdwatchers. 60% of assessed species in long-term decline.</p>
+            <p style="font-family:'DM Sans',sans-serif; color:#3a4040; line-height:1.8;">Jabalpur's House Sparrow was <strong>specifically named</strong> by a government committee as declining due to mobile tower radiation. We build the local evidence layer.</p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div class="source-pill">State of India's Birds 2023 ↗</div>
+            <div class="source-pill">eBird Jabalpur ↗</div>
+            <div class="source-pill">IUCN Red List ↗</div>
+            <div class="source-pill">Bird Count India ↗</div>
+            <div class="source-pill">MoEF&CC Expert Report ↗</div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="page-birds" class="page-enter">
+      <div style="background:#1a3a2a; padding:60px 24px 48px;">
+        <div style="max-width:1100px; margin:0 auto;">
+          <span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:#7aab6e; font-family:'DM Sans',sans-serif;">Jabalpur Native Species</span>
+          <h1 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:2.5rem; margin-top:10px; margin-bottom:12px;">Bird Directory</h1>
+          <p style="color:#b5c9a8; font-family:'DM Sans',sans-serif; max-width:560px; line-height:1.7;">All native and commonly seen birds of Jabalpur — with conservation status, SoIB 2023 priority, and known threats. Click any bird to learn more.</p>
+        </div>
+      </div>
+      <div style="max-width:1100px; margin:0 auto; padding:40px 24px 80px;">
+        <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:16px 20px; margin-bottom:28px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <select id="bird-priority-filter" class="field-select" style="width:auto; min-width:160px;" onchange="renderBirdDirectory()">
+            <option value="all">All Priorities</option>
+            <option value="high">High Priority</option>
+            <option value="moderate">Moderate Priority</option>
+            <option value="low">Low Priority</option>
+          </select>
+          <select id="bird-status-filter" class="field-select" style="width:auto; min-width:160px;" onchange="renderBirdDirectory()">
+            <option value="all">All Status</option>
+            <option value="critically-declining">Critically Declining</option>
+            <option value="declining">Declining</option>
+            <option value="stable">Stable</option>
+          </select>
+          <span style="font-size:.8rem; color:#7a8580; font-family:'DM Sans',sans-serif; margin-left:4px;">Showing <strong id="directory-count">12</strong> of 12 birds</span>
+        </div>
+        <div id="birds-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:18px;">
+          </div>
+      </div>
+    </div>
+
+    <div id="page-report" class="page-enter">
+      <div style="background:#1a3a2a; padding:60px 24px 48px;">
+        <div style="max-width:1100px; margin:0 auto;">
+          <span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:#7aab6e; font-family:'DM Sans',sans-serif;">Citizen Science</span>
+          <h1 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:2.5rem; margin-top:10px; margin-bottom:12px;">Report a Bird Sighting</h1>
+          <p style="color:#b5c9a8; font-family:'DM Sans',sans-serif; max-width:560px; line-height:1.7;">Saw a bird in Jabalpur? Tell us where, when, and what you noticed about its surroundings.</p>
+        </div>
+      </div>
+      <div style="max-width:1100px; margin:0 auto; padding:40px 24px 80px; display:grid; grid-template-columns:1fr 300px; gap:28px;">
+        
+        <div id="form-success" style="display:none; grid-column:1/-1; text-align:center; padding:72px 24px; flex-direction:column; align-items:center; gap:16px;">
+          <span style="font-size:4rem; animation:fadeUp .4s ease;">🎉</span>
+          <h2 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:2rem;">Sighting Reported!</h2>
+          <p style="font-family:'DM Sans',sans-serif; color:#3a4040; max-width:460px; line-height:1.7; margin:0 auto;">Thank you for contributing to Abhyuday's bird research. Your data has been recorded and will appear on the map and dashboard.</p>
+          <div style="display:flex; gap:12px; margin-top:12px; justify-content:center;">
+            <button class="btn-primary" onclick="resetForm()">Report Another</button>
+            <button class="btn-amber" onclick="navigate('dashboard')">View Dashboard →</button>
+          </div>
+        </div>
+
+        <div id="form-container" style="display:flex; flex-direction:column; gap:12px;">
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+              <span style="width:30px; height:30px; border-radius:50%; background:#1a3a2a; color:#f5e6b8; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; font-family:'Playfair Display',serif; flex-shrink:0;">01</span>
+              <h3 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.1rem;">Which Bird?</h3>
+            </div>
+            <select id="form-bird" class="field-select" onchange="updateBirdPreview()">
+              <option value="">— Select a bird —</option>
+              </select>
+            <div id="form-bird-preview" style="display:none; margin-top:10px; padding:12px; background:#e8f0e3; border-radius:10px; border:1px solid #b5c9a8; gap:10px; align-items:flex-start;">
+              </div>
+          </div>
+
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+              <span style="width:30px; height:30px; border-radius:50%; background:#1a3a2a; color:#f5e6b8; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; font-family:'Playfair Display',serif; flex-shrink:0;">02</span>
+              <h3 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.1rem;">Where &amp; When?</h3>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+              <select id="form-zone" class="field-select">
+                <option value="">— Area in JBP —</option>
+                </select>
+              <input type="date" id="form-date" class="field-input" />
+              <select id="form-count" class="field-select">
+                <option value="">Count?</option>
+                <option>1 bird</option>
+                <option>2–5 birds</option>
+                <option>6–10 birds</option>
+                <option>11–20 birds</option>
+                <option>20+ birds</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+              <span style="width:30px; height:30px; border-radius:50%; background:#1a3a2a; color:#f5e6b8; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; font-family:'Playfair Display',serif; flex-shrink:0;">03</span>
+              <h3 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.1rem;">Habitat</h3>
+              <span style="font-size:.75rem; color:#7a8580; font-style:italic; font-family:'DM Sans',sans-serif;">select all that apply</span>
+            </div>
+            <div id="form-habitats" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">
+              </div>
+          </div>
+
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+              <span style="width:30px; height:30px; border-radius:50%; background:#1a3a2a; color:#f5e6b8; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; font-family:'Playfair Display',serif; flex-shrink:0;">04</span>
+              <h3 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.1rem;">Threats You Notice</h3>
+              <span style="font-size:.75rem; color:#7a8580; font-style:italic; font-family:'DM Sans',sans-serif;">core of our research</span>
+            </div>
+            <div id="form-threats" style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px;">
+              </div>
+          </div>
+
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+              <span style="width:30px; height:30px; border-radius:50%; background:#1a3a2a; color:#f5e6b8; display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; font-family:'Playfair Display',serif; flex-shrink:0;">05</span>
+              <h3 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.1rem;">Notes</h3>
+              <span style="font-size:.75rem; color:#7a8580; font-style:italic; font-family:'DM Sans',sans-serif;">optional</span>
+            </div>
+            <textarea id="form-notes" class="field-textarea" rows="3" placeholder="e.g. The bird was nesting near an old building. Mobile tower visible nearby..."></textarea>
+          </div>
+
+          <div style="background:#e8f0e3; border:1px solid #b5c9a8; border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:10px;">
+            <button class="btn-amber" style="align-self:flex-start; font-size:1rem; padding:14px 30px;" onclick="submitSighting()">🐦 Submit Sighting →</button>
+            <p style="font-size:.75rem; color:#7a8580; font-style:italic; font-family:'DM Sans',sans-serif;">Your data is used purely for conservation research by Abhyuday Samarpan. No personal info shared publicly.</p>
+          </div>
+        </div>
+
+        <div id="form-sidebar" style="display:flex; flex-direction:column; gap:14px;">
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:14px; padding:16px;">
+            <h4 style="font-family:'Playfair Display',serif; font-size:.9rem; color:#1a3a2a; margin-bottom:6px;">🔬 Why This Matters</h4>
+            <p style="font-size:.78rem; color:#7a8580; line-height:1.65; font-family:'DM Sans',sans-serif;">SoIB 2023 found 60% of Indian birds declining — but national data lacks local detail. Your sighting fills that gap for Jabalpur.</p>
+          </div>
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:14px; padding:16px;">
+            <h4 style="font-family:'Playfair Display',serif; font-size:.9rem; color:#1a3a2a; margin-bottom:6px;">📍 Jabalpur Specifically</h4>
+            <p style="font-size:.78rem; color:#7a8580; line-height:1.65; font-family:'DM Sans',sans-serif;">House Sparrows in Jabalpur were specifically named in a government report as declining due to mobile tower radiation.</p>
+          </div>
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:14px; padding:16px;">
+            <h4 style="font-family:'Playfair Display',serif; font-size:.9rem; color:#1a3a2a; margin-bottom:6px;">🛡️ Your Data is Safe</h4>
+            <p style="font-size:.78rem; color:#7a8580; line-height:1.65; font-family:'DM Sans',sans-serif;">All data collected by Abhyuday Samarpan for research only. Name and phone are never shared publicly.</p>
+          </div>
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:14px; padding:16px;">
+            <h4 style="font-family:'Playfair Display',serif; font-size:.9rem; color:#1a3a2a; margin-bottom:6px;">💡 Not sure which bird?</h4>
+            <p style="font-size:.78rem; color:#7a8580; line-height:1.65; font-family:'DM Sans',sans-serif;">Check the Bird Directory — each bird has description, Hindi name, and status to help you identify it.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-dashboard" class="page-enter">
+      <div style="background:#1a3a2a; padding:60px 24px 48px;">
+        <div style="max-width:1100px; margin:0 auto;">
+          <span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:#7aab6e; font-family:'DM Sans',sans-serif;">Research Dashboard</span>
+          <h1 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:2.5rem; margin-top:10px; margin-bottom:12px;">Live Research Data</h1>
+          <p style="color:#b5c9a8; font-family:'DM Sans',sans-serif; max-width:560px; line-height:1.7;">Aggregated insights from citizen sightings. Connect SheetDB to see live data from real submissions.</p>
+        </div>
+      </div>
+      <div style="max-width:1100px; margin:0 auto; padding:40px 24px 80px; display:flex; flex-direction:column; gap:24px;">
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+          <div style="background:#fff; border:1px solid #c8d0cb; border-top:3px solid #2d5a3d; border-radius:16px; padding:18px 20px;">
+            <div style="font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; color:#1a3a2a; line-height:1;">—</div>
+            <div style="font-size:.875rem; font-weight:600; color:#3a4040; font-family:'DM Sans',sans-serif; margin-top:6px;">Total Sightings</div>
+            <div style="font-size:.72rem; color:#7a8580; font-family:'DM Sans',sans-serif; margin-top:3px;">connect SheetDB to see live data</div>
+          </div>
+          <div style="background:#fff; border:1px solid #c8d0cb; border-top:3px solid #e8973a; border-radius:16px; padding:18px 20px;">
+            <div style="font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; color:#1a3a2a; line-height:1;">12</div>
+            <div style="font-size:.875rem; font-weight:600; color:#3a4040; font-family:'DM Sans',sans-serif; margin-top:6px;">Birds in Directory</div>
+            <div style="font-size:.72rem; color:#7a8580; font-family:'DM Sans',sans-serif; margin-top:3px;">native JBP species tracked</div>
+          </div>
+          <div style="background:#fff; border:1px solid #c8d0cb; border-top:3px solid #7aab6e; border-radius:16px; padding:18px 20px;">
+            <div style="font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; color:#1a3a2a; line-height:1;">16</div>
+            <div style="font-size:.875rem; font-weight:600; color:#3a4040; font-family:'DM Sans',sans-serif; margin-top:6px;">Zones Covered</div>
+            <div style="font-size:.72rem; color:#7a8580; font-family:'DM Sans',sans-serif; margin-top:3px;">across Jabalpur</div>
+          </div>
+          <div style="background:#fff; border:1px solid #c8d0cb; border-top:3px solid #c4622d; border-radius:16px; padding:18px 20px;">
+            <div style="font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:700; color:#1a3a2a; line-height:1;">7</div>
+            <div style="font-size:.875rem; font-weight:600; color:#3a4040; font-family:'DM Sans',sans-serif; margin-top:6px;">Declining Species</div>
+            <div style="font-size:.72rem; color:#7a8580; font-family:'DM Sans',sans-serif; margin-top:3px;">based on SoIB 2023</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+            <div style="font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#7a8580; font-family:'DM Sans',sans-serif; margin-bottom:16px;">Most Reported Birds</div>
+            <div id="dash-most-reported" style="display:flex; flex-direction:column; gap:10px;">
+              </div>
+            <p style="font-size:.72rem; color:#7a8580; font-style:italic; margin-top:14px; font-family:'DM Sans',sans-serif;">Live chart will show after SheetDB is connected.</p>
+          </div>
+
+          <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+            <div style="font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#7a8580; font-family:'DM Sans',sans-serif; margin-bottom:16px;">Top Threats (Sample)</div>
+            <div id="dash-top-threats" style="display:flex; flex-direction:column; gap:8px;">
+              </div>
+            <p style="font-size:.72rem; color:#7a8580; font-style:italic; margin-top:14px; font-family:'DM Sans',sans-serif;">Live pie chart will show after SheetDB is connected.</p>
+          </div>
+        </div>
+
+        <div style="background:#fff; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+          <div style="font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#7a8580; font-family:'DM Sans',sans-serif; margin-bottom:16px;">Sightings by Area (Sample)</div>
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="border-bottom:2px solid #e8f0e3;">
+                <th style="text-align:left; padding:8px 12px; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#7a8580; font-family:'DM Sans',sans-serif;">#</th>
+                <th style="text-align:left; padding:8px 12px; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#7a8580; font-family:'DM Sans',sans-serif;">Area</th>
+                <th style="text-align:left; padding:8px 12px; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#7a8580; font-family:'DM Sans',sans-serif;">Habitat Type</th>
+                <th style="text-align:left; padding:8px 12px; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#7a8580; font-family:'DM Sans',sans-serif;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="dash-zone-table">
+              </tbody>
+          </table>
+        </div>
+
+        <div style="background:#e8f0e3; border:1px solid #b5c9a8; border-radius:16px; padding:20px;">
+          <h4 style="font-family:'Playfair Display',serif; color:#1a3a2a; margin-bottom:8px;">📋 Research Notes</h4>
+          <p style="font-size:.875rem; color:#3a4040; line-height:1.7; font-family:'DM Sans',sans-serif;">Data collected by <strong>Abhyuday Samarpan</strong> guided by <strong>State of India's Birds 2023</strong> and cross-referenced with eBird Jabalpur. Raw citizen input — not yet scientifically validated. Treat trends as indicative.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="page-about" class="page-enter">
+      <div style="background:#1a3a2a; padding:60px 24px 48px;">
+        <div style="max-width:900px; margin:0 auto;">
+          <span style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em; color:#7aab6e; font-family:'DM Sans',sans-serif;">About This Project</span>
+          <h1 style="font-family:'Playfair Display',serif; color:#f5e6b8; font-size:2.5rem; margin-top:10px; margin-bottom:8px;">Pakshi Sarvekshan</h1>
+          <p style="color:#7aab6e; font-family:'DM Sans',sans-serif;">Abhyuday Samarpan · Jabalpur, Madhya Pradesh</p>
+        </div>
+      </div>
+      <div style="max-width:860px; margin:0 auto; padding:48px 24px 80px; display:flex; flex-direction:column; gap:40px;">
+        <section>
+          <h2 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.6rem; padding-bottom:12px; border-bottom:2px solid #e8f0e3; margin-bottom:20px;">Research Question</h2>
+          <blockquote style="font-family:'Playfair Display',serif; font-size:1.15rem; font-style:italic; color:#1a3a2a; padding:16px 20px; border-left:4px solid #e8973a; background:#f5e6b8; border-radius:0 12px 12px 0; line-height:1.6; margin-bottom:20px;">
+            "Which native bird species of Jabalpur are declining, where are they being sighted, and what environmental factors are responsible?"
+          </blockquote>
+          <p style="font-family:'DM Sans',sans-serif; color:#3a4040; line-height:1.8;">This platform builds the local-level data layer that national reports like SoIB 2023 cannot provide. We need to know which <em>mohalla</em> of Jabalpur still has House Sparrows, and whether Bargi Dam's water level is destroying duck nesting sites <em>this season</em>. <strong>That's what our citizens can tell us.</strong></p>
+        </section>
+
+        <section>
+          <h2 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.6rem; padding-bottom:12px; border-bottom:2px solid #e8f0e3; margin-bottom:20px;">Our Approach</h2>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; gap:14px; align-items:flex-start; padding:16px; background:#fff; border:1px solid #c8d0cb; border-radius:12px;">
+              <span style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:#e8973a; min-width:28px;">01</span>
+              <div><h4 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:.95rem; margin-bottom:4px;">Clear Research Question</h4><p style="font-size:.82rem; color:#7a8580; font-family:'DM Sans',sans-serif; line-height:1.65;">Start with a specific focused question, not vague awareness-raising.</p></div>
+            </div>
+            <div style="display:flex; gap:14px; align-items:flex-start; padding:16px; background:#fff; border:1px solid #c8d0cb; border-radius:12px;">
+              <span style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:#e8973a; min-width:28px;">02</span>
+              <div><h4 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:.95rem; margin-bottom:4px;">Review Existing Research</h4><p style="font-size:.82rem; color:#7a8580; font-family:'DM Sans',sans-serif; line-height:1.65;">Every feature informed by SoIB 2023, IUCN data, eBird records, and documented studies.</p></div>
+            </div>
+            <div style="display:flex; gap:14px; align-items:flex-start; padding:16px; background:#fff; border:1px solid #c8d0cb; border-radius:12px;">
+              <span style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:#e8973a; min-width:28px;">03</span>
+              <div><h4 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:.95rem; margin-bottom:4px;">Citizen Data Collection</h4><p style="font-size:.82rem; color:#7a8580; font-family:'DM Sans',sans-serif; line-height:1.65;">Every Jabalpuri resident is a potential field researcher.</p></div>
+            </div>
+            <div style="display:flex; gap:14px; align-items:flex-start; padding:16px; background:#fff; border:1px solid #c8d0cb; border-radius:12px;">
+              <span style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:#e8973a; min-width:28px;">04</span>
+              <div><h4 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:.95rem; margin-bottom:4px;">Factor Analysis</h4><p style="font-size:.82rem; color:#7a8580; font-family:'DM Sans',sans-serif; line-height:1.65;">We ask not just where is this bird, but what environmental factors are present or absent.</p></div>
+            </div>
+            <div style="display:flex; gap:14px; align-items:flex-start; padding:16px; background:#fff; border:1px solid #c8d0cb; border-radius:12px;">
+              <span style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:#e8973a; min-width:28px;">05</span>
+              <div><h4 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:.95rem; margin-bottom:4px;">Public Data Access</h4><p style="font-size:.82rem; color:#7a8580; font-family:'DM Sans',sans-serif; line-height:1.65;">All aggregated findings visible on our dashboard and map.</p></div>
+            </div>
+            <div style="display:flex; gap:14px; align-items:flex-start; padding:16px; background:#fff; border:1px solid #c8d0cb; border-radius:12px;">
+              <span style="font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; color:#e8973a; min-width:28px;">06</span>
+              <div><h4 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:.95rem; margin-bottom:4px;">Action</h4><p style="font-size:.82rem; color:#7a8580; font-family:'DM Sans',sans-serif; line-height:1.65;">Findings shared with forest authorities and used to advocate for specific interventions.</p></div>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:#e8f0e3; border:1px solid #b5c9a8; border-radius:16px; padding:28px;">
+          <h2 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.4rem; margin-bottom:14px;">About Abhyuday Samarpan</h2>
+          <p style="font-family:'DM Sans',sans-serif; color:#3a4040; line-height:1.8; margin-bottom:16px;">Youth-led NGO based in Jabalpur, MP. Our work spans Education, Environment, Animal Welfare, and Swachh Bharat. This platform is part of our environment focus — building evidence-based action.</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <span style="padding:4px 14px; background:#fff; border:1.5px solid #4a7c5e; border-radius:20px; font-size:.8rem; font-weight:600; color:#2d5a3d; font-family:'DM Sans',sans-serif;">Education</span>
+            <span style="padding:4px 14px; background:#fff; border:1.5px solid #4a7c5e; border-radius:20px; font-size:.8rem; font-weight:600; color:#2d5a3d; font-family:'DM Sans',sans-serif;">Environment</span>
+            <span style="padding:4px 14px; background:#fff; border:1.5px solid #4a7c5e; border-radius:20px; font-size:.8rem; font-weight:600; color:#2d5a3d; font-family:'DM Sans',sans-serif;">Animal Welfare</span>
+            <span style="padding:4px 14px; background:#fff; border:1.5px solid #4a7c5e; border-radius:20px; font-size:.8rem; font-weight:600; color:#2d5a3d; font-family:'DM Sans',sans-serif;">Swachh Bharat</span>
+          </div>
+        </section>
+
+        <section>
+          <h2 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.6rem; padding-bottom:12px; border-bottom:2px solid #e8f0e3; margin-bottom:20px;">Scientific Sources</h2>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div style="background:#fff; border:1px solid #c8d0cb; border-radius:12px; padding:16px; cursor:pointer; transition:all .2s;">
+              <h4 style="font-family:'Playfair Display',serif; color:#2d5a3d; font-size:.9rem; margin-bottom:6px;">State of India's Birds 2023 ↗</h4>
+              <p style="font-size:.78rem; color:#7a8580; line-height:1.6; font-family:'DM Sans',sans-serif;">30M observations by 30,000 birdwatchers. 60% of species in long-term decline.</p>
+            </div>
+            <div style="background:#fff; border:1px solid #c8d0cb; border-radius:12px; padding:16px; cursor:pointer; transition:all .2s;">
+              <h4 style="font-family:'Playfair Display',serif; color:#2d5a3d; font-size:.9rem; margin-bottom:6px;">eBird Jabalpur ↗</h4>
+              <p style="font-size:.78rem; color:#7a8580; line-height:1.6; font-family:'DM Sans',sans-serif;">Cornell Lab citizen science. Live Jabalpur sightings cross-referenced with our data.</p>
+            </div>
+            <div style="background:#fff; border:1px solid #c8d0cb; border-radius:12px; padding:16px; cursor:pointer; transition:all .2s;">
+              <h4 style="font-family:'Playfair Display',serif; color:#2d5a3d; font-size:.9rem; margin-bottom:6px;">IUCN Red List ↗</h4>
+              <p style="font-size:.78rem; color:#7a8580; line-height:1.6; font-family:'DM Sans',sans-serif;">Global conservation status for all species — used for Bird Directory classification.</p>
+            </div>
+            <div style="background:#fff; border:1px solid #c8d0cb; border-radius:12px; padding:16px; cursor:pointer; transition:all .2s;">
+              <h4 style="font-family:'Playfair Display',serif; color:#2d5a3d; font-size:.9rem; margin-bottom:6px;">MoEF&CC Expert Committee ↗</h4>
+              <p style="font-size:.78rem; color:#7a8580; line-height:1.6; font-family:'DM Sans',sans-serif;">Specifically named Jabalpur among cities where House Sparrow declining due to EMR.</p>
+            </div>
+            <div style="background:#fff; border:1px solid #c8d0cb; border-radius:12px; padding:16px; cursor:pointer; transition:all .2s;">
+              <h4 style="font-family:'Playfair Display',serif; color:#2d5a3d; font-size:.9rem; margin-bottom:6px;">WWF Living Planet Report 2024 ↗</h4>
+              <p style="font-size:.78rem; color:#7a8580; line-height:1.6; font-family:'DM Sans',sans-serif;">Documents 98% collapse of White-rumped Vulture between 1992–2002.</p>
+            </div>
+            <div style="background:#fff; border:1px solid #c8d0cb; border-radius:12px; padding:16px; cursor:pointer; transition:all .2s;">
+              <h4 style="font-family:'Playfair Display',serif; color:#2d5a3d; font-size:.9rem; margin-bottom:6px;">Bird Count India ↗</h4>
+              <p style="font-size:.78rem; color:#7a8580; line-height:1.6; font-family:'DM Sans',sans-serif;">SoIB 2023 summary and Indian birding community data for contextualisation.</p>
+            </div>
+          </div>
+        </section>
+
+        <section style="background:#f7f5f0; border:1px solid #c8d0cb; border-radius:16px; padding:24px;">
+          <h2 style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.4rem; margin-bottom:12px;">Data Policy</h2>
+          <p style="font-family:'DM Sans',sans-serif; color:#3a4040; line-height:1.8; font-size:.9rem;">All sighting data collected voluntarily and stored in a Google Sheet managed by Abhyuday Samarpan. Reporter names and phone numbers never displayed publicly. Aggregated, anonymised data is publicly visible on Dashboard and Map. No tracking. No ads. No third-party data sharing.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer style="background:#1a3a2a; border-top:2px solid #2d5a3d;">
+    <div style="max-width:1100px; margin:0 auto; padding:48px 24px 32px; display:grid; grid-template-columns:2fr 1fr 1fr; gap:48px;">
+      <div>
+        <span style="font-size:2rem;">🐦</span>
+        <h3 style="font-family:'Playfair Display',serif; color:#f5e6b8; margin-top:8px; margin-bottom:4px;">Pakshi Sarvekshan</h3>
+        <p style="font-size:.78rem; color:#7aab6e; margin-bottom:12px; font-family:'DM Sans',sans-serif;">Abhyuday Samarpan · Jabalpur, MP</p>
+        <p style="font-size:.78rem; color:#7a8580; font-style:italic; font-family:'DM Sans',sans-serif; line-height:1.6; max-width:300px;">"Which native birds of Jabalpur are declining, where are they sighted, and what factors are responsible?"</p>
+      </div>
+      <div>
+        <h4 style="font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#7aab6e; font-family:'DM Sans',sans-serif; margin-bottom:14px;">Platform</h4>
+        <div style="margin-bottom:8px;"><button onclick="navigate('home')" style="background:none; border:none; color:#c8d0cb; font-size:.875rem; cursor:pointer; font-family:'DM Sans',sans-serif; padding:0; text-align:left;">Home</button></div>
+        <div style="margin-bottom:8px;"><button onclick="navigate('birds')" style="background:none; border:none; color:#c8d0cb; font-size:.875rem; cursor:pointer; font-family:'DM Sans',sans-serif; padding:0; text-align:left;">Bird Directory</button></div>
+        <div style="margin-bottom:8px;"><button onclick="navigate('report')" style="background:none; border:none; color:#c8d0cb; font-size:.875rem; cursor:pointer; font-family:'DM Sans',sans-serif; padding:0; text-align:left;">Report Sighting</button></div>
+        <div style="margin-bottom:8px;"><button onclick="navigate('dashboard')" style="background:none; border:none; color:#c8d0cb; font-size:.875rem; cursor:pointer; font-family:'DM Sans',sans-serif; padding:0; text-align:left;">Dashboard</button></div>
+        <div style="margin-bottom:8px;"><button onclick="navigate('about')" style="background:none; border:none; color:#c8d0cb; font-size:.875rem; cursor:pointer; font-family:'DM Sans',sans-serif; padding:0; text-align:left;">About</button></div>
+      </div>
+      <div>
+        <h4 style="font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#7aab6e; font-family:'DM Sans',sans-serif; margin-bottom:14px;">Data Sources</h4>
+        <div style="margin-bottom:8px;"><span style="color:#c8d0cb; font-size:.875rem; font-family:'DM Sans',sans-serif;">State of India's Birds 2023 ↗</span></div>
+        <div style="margin-bottom:8px;"><span style="color:#c8d0cb; font-size:.875rem; font-family:'DM Sans',sans-serif;">eBird Jabalpur ↗</span></div>
+        <div style="margin-bottom:8px;"><span style="color:#c8d0cb; font-size:.875rem; font-family:'DM Sans',sans-serif;">IUCN Red List ↗</span></div>
+        <div style="margin-bottom:8px;"><span style="color:#c8d0cb; font-size:.875rem; font-family:'DM Sans',sans-serif;">Bird Count India ↗</span></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.08); text-align:center; padding:16px 24px;">
+      <p style="font-size:.72rem; color:#7a8580; font-family:'DM Sans',sans-serif;">© <span id="current-year"></span> Abhyuday Samarpan · Data collected under citizen science research · Built for Jabalpur 🌿</p>
+    </div>
+  </footer>
+
+  <div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid #e8f0e3; position:sticky; top:0; background:#fff; z-index:1;">
+        <h3 id="modal-title" style="font-family:'Playfair Display',serif; color:#1a3a2a; font-size:1.2rem;"></h3>
+        <button onclick="closeModal()" style="width:32px; height:32px; border-radius:50%; border:none; background:#f0ede8; color:#7a8580; cursor:pointer; font-size:.875rem;">✕</button>
+      </div>
+      <div style="padding:24px; display:flex; flex-direction:column; gap:20px;">
+        <div style="display:grid; grid-template-columns:180px 1fr; gap:20px;">
+          <div id="modal-emoji" style="height:180px; background:linear-gradient(135deg,#e8f0e3,#b5c9a8); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:5rem;"></div>
+          <div>
+            <p id="modal-sci" style="font-style:italic; color:#7a8580; font-size:.875rem; margin-bottom:10px; font-family:'DM Sans',sans-serif;"></p>
+            <div id="modal-chips" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;"></div>
+            <p id="modal-desc" style="font-family:'DM Sans',sans-serif; color:#3a4040; line-height:1.75; font-size:.9rem; margin-bottom:12px;"></p>
+            <span style="font-size:.82rem; font-weight:600; color:#2d5a3d; padding:5px 14px; border:1.5px solid #4a7c5e; border-radius:20px; font-family:'DM Sans',sans-serif; cursor:pointer;">View on eBird ↗</span>
+          </div>
+        </div>
+        <div id="modal-threats-container">
+          <h4 style="font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:#7a8580; margin-bottom:10px; font-family:'DM Sans',sans-serif;">Known Threats</h4>
+          <div id="modal-threats" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+        </div>
+        <div style="display:flex; align-items:center; gap:16px; padding:16px; background:#e8f0e3; border-radius:12px; flex-wrap:wrap;">
+          <p style="font-size:.9rem; color:#1a3a2a; font-weight:500; font-family:'DM Sans',sans-serif;">Have you seen this bird in Jabalpur?</p>
+          <button class="btn-amber" style="font-size:.85rem; padding:10px 20px;" onclick="closeModalAndReport()">Report a Sighting →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Data
+    const BIRDS = [
+      { id: "house-sparrow", name: "House Sparrow", hindi: "गौरैया", sci: "Passer domesticus", status: "declining", priority: "high", cat: "Urban", desc: "Once Jabalpur's most common urban bird, rapidly declining due to mobile tower radiation, loss of nesting spots in modern buildings, and packaged food culture eliminating grain spillage.", threats: ["📡 Mobile Tower EMR", "🏗️ No Nesting Spots", "☠️ Pesticides"] },
+      { id: "indian-roller", name: "Indian Roller", hindi: "नीलकंठ", sci: "Coracias benghalensis", status: "declining", priority: "moderate", cat: "Open Land", desc: "Sacred in Hindu mythology, associated with Lord Shiva. SoIB 2023 urgently recommends reassessment of its IUCN status. Declining due to habitat loss.", threats: ["🪓 Deforestation", "🌾 Habitat Loss", "☠️ Pesticides"] },
+      { id: "white-rumped-vulture", name: "White-rumped Vulture", hindi: "गिद्ध", sci: "Gyps bengalensis", status: "critically-declining", priority: "high", cat: "Raptor", desc: "Population collapsed 98% between 1992–2002 due to diclofenac in livestock. Barely sighted around Jabalpur now. Critically endangered.", threats: ["💊 Diclofenac Drug", "🌾 Food Scarcity", "🪓 Habitat Loss"] },
+      { id: "sarus-crane", name: "Sarus Crane", hindi: "सारस", sci: "Antigone antigone", status: "declining", priority: "high", cat: "Wetland", desc: "World's tallest flying bird. Seen near Bargi Dam wetlands. Threatened by wetland loss and farming encroachment on nesting grounds.", threats: ["🌊 Wetland Loss", "🌾 Farming Encroachment", "🪤 Hunting"] },
+      { id: "asian-koel", name: "Asian Koel", hindi: "कोयल", sci: "Eudynamys scolopaceus", status: "stable", priority: "low", cat: "Urban", desc: "The Kokila of Indian poetry. One of the few good news stories — population is actually increasing in urban Jabalpur. Brood parasite of crows.", threats: [] },
+      { id: "black-drongo", name: "Black Drongo", hindi: "कोतवाल", sci: "Dicrurus macrocercus", status: "stable", priority: "low", cat: "Urban", desc: "The fearless Kotwal of Indian fields. Attacks crows and even hawks near its territory. Stable in Jabalpur but worth monitoring.", threats: ["☠️ Pesticides"] },
+      { id: "painted-stork", name: "Painted Stork", hindi: "रंगीला बगुला", sci: "Mycteria leucocephala", status: "declining", priority: "moderate", cat: "Wetland", desc: "Seen at Khandari Reservoir and Bargi Dam. Declining due to wetland degradation and water pollution around Jabalpur's water bodies.", threats: ["🌊 Wetland Loss", "🚫 Water Pollution"] },
+      { id: "common-kestrel", name: "Common Kestrel", hindi: "छोटा बाज", sci: "Falco tinnunculus", status: "declining", priority: "moderate", cat: "Raptor", desc: "Small falcon seen hovering over open fields around Jabalpur. Declining due to rapid loss of open grassland habitat to urban expansion.", threats: ["🌾 Habitat Loss", "🏙️ Urbanisation"] },
+      { id: "greater-coucal", name: "Greater Coucal", hindi: "महोख", sci: "Centropus sinensis", status: "stable", priority: "low", cat: "Forest Edge", desc: "Large glossy black bird with chestnut wings. Found in dense vegetation near Jabalpur's forest edges. Stable but sensitive to deforestation.", threats: ["🪓 Deforestation"] },
+      { id: "red-vented-bulbul", name: "Red-vented Bulbul", hindi: "बुलबुल", sci: "Pycnonotus cafer", status: "stable", priority: "low", cat: "Urban", desc: "One of Jabalpur's most visible and vocal birds. Bold, adaptable, found in gardens, parks, and roadsides. Population holding steady.", threats: [] },
+      { id: "lesser-florican", name: "Lesser Florican", hindi: "खरमोर", sci: "Sypheotides indicus", status: "critically-declining", priority: "high", cat: "Grassland", desc: "Critically endangered grassland bird of central India. Grassland specialists have declined by over 50% nationwide. Rarely seen now.", threats: ["🌾 Grassland Loss", "🌾 Farming Encroachment", "🪤 Hunting"] },
+      { id: "spotted-dove", name: "Spotted Dove", hindi: "फाखता", sci: "Spilopelia chinensis", status: "stable", priority: "low", cat: "Urban", desc: "Very common dove of parks and gardens across Jabalpur. Stable population, easily spotted in residential areas.", threats: [] }
+    ];
+
+    const ZONES = ["Bargi Dam Area","Khandari Reservoir","Bhedaghat","Sail Parman Park","Pisangari Hills","Napier Town","Wright Town","Adhartal Lake","Gwari Ghat / Narmada","Madan Mahal Hills","Dumna Nature Reserve","Lamti Village Area"];
+    const THREATS = ["📡 Mobile Tower / EMR Radiation","🏗️ No Nesting Spots (modern buildings)","☠️ Pesticide Use","🪓 Tree Cutting / Deforestation","🔨 Construction Noise","🐕 Stray Dogs / Cats","🚫 Water Body Pollution","🗑️ Garbage Dumping","💡 Excessive Light at Night","🌊 Bargi Dam Water Level Change","🪤 Hunting / Trapping","💊 Veterinary Drugs (Diclofenac)","🌡️ Unusual Weather / Climate Change","🌾 Food Scarcity"];
+    const HABITATS = ["🌾 Open Farmland","🌳 Urban Park / Garden","🏠 Rooftop / Terrace","💧 Lake / Pond / River","🌲 Forest Edge","🌿 Dense Forest","🍃 Grassland / Scrubland","🛣️ Roadside","🏘️ Residential Colony","🏙️ Dense Urban / Concrete","🏛️ Old Building / Heritage","🌊 Wetland / Marsh"];
+
+    const BIRD_EMOJIS = { "raptor":"🦅", "wetland":"🦢", "grassland":"🌾", "urban":"🐦", "open-land":"🐤", "forest-edge":"🦜" };
+    const STATUS_COLORS = { 
+      "critically-declining": { bg:"#fde8e8", text:"#c0392b", dot:"#c0392b", label:"Critically Declining" }, 
+      "declining": { bg:"#fdf3e3", text:"#d35400", dot:"#e67e22", label:"Declining" }, 
+      "stable": { bg:"#e9f7ef", text:"#1e8449", dot:"#27ae60", label:"Stable" } 
+    };
+    const PRIORITY_COLORS = { 
+      "high":{ bg:"#fde8e8",text:"#c0392b" }, 
+      "moderate":{ bg:"#fdf3e3",text:"#d35400" }, 
+      "low":{ bg:"#e9f7ef",text:"#1e8449" } 
+    };
+
+    // State form
+    let selectedHabitats = [];
+    let selectedThreats = [];
+    let selectedBirdId = null;
+
+    // Set Copyright Year
+    document.getElementById('current-year').innerText = new Date().getFullYear();
+
+    // Navigation Logic
+    function navigate(pageId) {
+      document.querySelectorAll('.page-enter').forEach(el => el.classList.remove('active'));
+      document.getElementById('page-' + pageId).classList.add('active');
+      document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+      const activeNav = document.getElementById('nav-' + pageId);
+      if(activeNav) activeNav.classList.add('active');
+      window.scrollTo(0,0);
+    }
+
+    function getEmoji(cat) {
+      return BIRD_EMOJIS[cat.toLowerCase().replace(" ","-")] || "🐦";
+    }
+
+    // Modal Logic
+    function openModal(birdId) {
+      const bird = BIRDS.find(b => b.id === birdId);
+      if(!bird) return;
+      selectedBirdId = birdId;
+      
+      const sc = STATUS_COLORS[bird.status];
+      const pc = PRIORITY_COLORS[bird.priority];
+      
+      document.getElementById('modal-title').innerText = `${bird.name} — ${bird.hindi}`;
+      document.getElementById('modal-emoji').innerText = getEmoji(bird.cat);
+      document.getElementById('modal-sci').innerText = bird.sci;
+      document.getElementById('modal-desc').innerText = bird.desc;
+      
+      document.getElementById('modal-chips').innerHTML = `
+        <span class="chip" style="background:${sc.bg}; color:${sc.text}">${sc.label}</span>
+        <span class="chip" style="background:${pc.bg}; color:${pc.text}">SoIB ${bird.priority.charAt(0).toUpperCase()+bird.priority.slice(1)} Priority</span>
+        <span class="chip" style="background:#f0ede8; color:#7a8580">${bird.cat}</span>
+      `;
+
+      const threatsContainer = document.getElementById('modal-threats-container');
+      const threatsDiv = document.getElementById('modal-threats');
+      if(bird.threats.length > 0) {
+        threatsContainer.style.display = 'block';
+        threatsDiv.innerHTML = bird.threats.map(t => `<span style="padding:5px 12px; background:#fff3ee; border:1px solid #f5cdb8; border-radius:20px; font-size:.8rem; color:#c4622d; font-weight:500; font-family:'DM Sans',sans-serif;">${t}</span>`).join('');
+      } else {
+        threatsContainer.style.display = 'none';
+      }
+
+      document.getElementById('modal-overlay').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').style.display = 'none';
+      selectedBirdId = null;
+    }
+
+    function closeModalAndReport() {
+      if(selectedBirdId) {
+        document.getElementById('form-bird').value = selectedBirdId;
+        updateBirdPreview();
+      }
+      closeModal();
+      navigate('report');
+    }
+
+    // Init Home High Priority
+    function renderHomeGrid() {
+      const highPriority = BIRDS.filter(b => b.priority === "high").slice(0,3);
+      const grid = document.getElementById('home-priority-grid');
+      grid.innerHTML = highPriority.map(b => {
+        return `
+          <div class="bird-card" onclick="openModal('${b.id}')">
+            <div style="height:140px; background:linear-gradient(135deg, #e8f0e3, #b5c9a8); display:flex; align-items:center; justify-content:center; font-size:3.5rem;">
+              ${getEmoji(b.cat)}
+            </div>
+            <div style="padding:16px;">
+              <span class="chip" style="background:#fde8e8; color:#c0392b; margin-bottom:8px;">High Priority</span>
+              <h3 style="font-family:'Playfair Display',serif; font-size:1.05rem; color:#1a3a2a; margin-bottom:2px;">${b.name}</h3>
+              <p style="font-size:1rem; color:#4a7c5e; font-weight:500; margin-bottom:6px; font-family:'DM Sans',sans-serif;">${b.hindi}</p>
+              <p style="font-size:.8rem; color:#7a8580; line-height:1.6; font-family:'DM Sans',sans-serif;">${b.desc.slice(0,100)}…</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Init Bird Directory
+    function renderBirdDirectory() {
+      const priorityFilter = document.getElementById('bird-priority-filter').value;
+      const statusFilter = document.getElementById('bird-status-filter').value;
+      
+      const filtered = BIRDS.filter(b => {
+        if (priorityFilter !== "all" && b.priority !== priorityFilter) return false;
+        if (statusFilter !== "all" && b.status !== statusFilter) return false;
+        return true;
+      });
+
+      document.getElementById('directory-count').innerText = filtered.length;
+
+      const grid = document.getElementById('birds-grid');
+      grid.innerHTML = filtered.map(b => {
+        const sc = STATUS_COLORS[b.status];
+        const pc = PRIORITY_COLORS[b.priority];
+        return `
+          <div class="bird-card" onclick="openModal('${b.id}')">
+            <div style="height:130px; background:linear-gradient(135deg,#e8f0e3,#b5c9a8); display:flex; align-items:center; justify-content:center; font-size:3rem; position:relative;">
+              ${getEmoji(b.cat)}
+              <span class="chip" style="position:absolute; top:8px; right:8px; background:${sc.bg}; color:${sc.text}; font-size:.65rem;">${sc.label}</span>
+            </div>
+            <div style="padding:14px;">
+              <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:4px;">
+                <h4 style="font-family:'Playfair Display',serif; font-size:.95rem; color:#1a3a2a;">${b.name}</h4>
+                <span style="font-size:.95rem; color:#4a7c5e; font-weight:500; font-family:'DM Sans',sans-serif;">${b.hindi}</span>
+              </div>
+              <p style="font-size:.7rem; font-style:italic; color:#7a8580; margin-bottom:6px; font-family:'DM Sans',sans-serif;">${b.sci}</p>
+              <p style="font-size:.78rem; color:#3a4040; line-height:1.55; font-family:'DM Sans',sans-serif; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">${b.desc}</p>
+              <div style="margin-top:10px; padding-top:8px; border-top:1px solid #f0ede8; display:flex; justify-content:space-between; align-items:center;">
+                <span class="chip" style="background:${pc.bg}; color:${pc.text}; font-size:.62rem;">SoIB ${b.priority.charAt(0).toUpperCase()+b.priority.slice(1)}</span>
+                <span style="font-size:.68rem; color:#7a8580; font-family:'DM Sans',sans-serif;">${b.cat}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Init Form Setup
+    function setupForm() {
+      document.getElementById('form-date').max = new Date().toISOString().split("T");
+      document.getElementById('form-date').value = new Date().toISOString().split("T");
+      
+      document.getElementById('form-bird').innerHTML += BIRDS.map(b => `<option value="${b.id}">${b.name} (${b.hindi})</option>`).join('');
+      document.getElementById('form-zone').innerHTML += ZONES.map(z => `<option value="${z}">${z}</option>`).join('');
+      
+      renderFormChips();
+    }
+
+    function toggleArray(arr, val) {
+      const idx = arr.indexOf(val);
+      if(idx > -1) arr.splice(idx, 1);
+      else arr.push(val);
+    }
+
+    function renderFormChips() {
+      const habDiv = document.getElementById('form-habitats');
+      habDiv.innerHTML = HABITATS.map((h, i) => `
+        <div class="habit-chip ${selectedHabitats.includes(h)?'selected':''}" onclick="toggleHab('${i}')">
+          ${h} ${selectedHabitats.includes(h) ? '<span style="margin-left:auto; color:#2d5a3d; font-weight:700;">✓</span>' : ''}
+        </div>
+      `).join('');
+
+      const threatDiv = document.getElementById('form-threats');
+      threatDiv.innerHTML = THREATS.map((t, i) => `
+        <div class="threat-chip ${selectedThreats.includes(t)?'selected':''}" onclick="toggleThreat('${i}')">
+          ${t} ${selectedThreats.includes(t) ? '<span style="margin-left:auto; color:#c4622d; font-weight:700;">✓</span>' : ''}
+        </div>
+      `).join('');
+    }
+
+    function toggleHab(idx) { toggleArray(selectedHabitats, HABITATS[idx]); renderFormChips(); }
+    function toggleThreat(idx) { toggleArray(selectedThreats, THREATS[idx]); renderFormChips(); }
+
+    function updateBirdPreview() {
+      const val = document.getElementById('form-bird').value;
+      const preview = document.getElementById('form-bird-preview');
+      if(!val) { preview.style.display = 'none'; return; }
+      
+      const b = BIRDS.find(x => x.id === val);
+      if(b) {
+        preview.style.display = 'flex';
+        preview.innerHTML = `
+          <span style="font-size:1.8rem;">${getEmoji(b.cat)}</span>
+          <div>
+            <strong style="font-family:'Playfair Display',serif; color:#1a3a2a;">${b.name}</strong> 
+            <span class="chip" style="background:${PRIORITY_COLORS[b.priority].bg}; color:${PRIORITY_COLORS[b.priority].text}; margin-left:4px;">SoIB ${b.priority}</span>
+            <p style="font-size:.78rem; color:#7a8580; font-family:'DM Sans',sans-serif; margin-top:3px;">${b.desc.slice(0,90)}…</p>
+          </div>
+        `;
+      }
+    }
+
+    function submitSighting() {
+      const bird = document.getElementById('form-bird').value;
+      const zone = document.getElementById('form-zone').value;
+      if(bird && zone) {
+        document.getElementById('form-container').style.display = 'none';
+        document.getElementById('form-sidebar').style.display = 'none';
+        document.getElementById('form-success').style.display = 'flex';
+      } else {
+        alert("Please select at least a Bird and a Zone.");
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('form-bird').value = "";
+      document.getElementById('form-zone').value = "";
+      document.getElementById('form-count').value = "";
+      document.getElementById('form-notes').value = "";
+      selectedHabitats = [];
+      selectedThreats = [];
+      updateBirdPreview();
+      renderFormChips();
+      
+      document.getElementById('form-success').style.display = 'none';
+      document.getElementById('form-container').style.display = 'flex';
+      document.getElementById('form-sidebar').style.display = 'flex';
+    }
+
+    // Init Dashboard
+    function renderDashboard() {
+      const decliningBirds = BIRDS.filter(b => b.status !== "stable").slice(0,6);
+      document.getElementById('dash-most-reported').innerHTML = decliningBirds.map((b,i) => {
+        const w = 80 - (i*12);
+        const sc = STATUS_COLORS[b.status];
+        return `
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="width:20px; font-size:.72rem; color:#7a8580; font-family:'DM Sans',sans-serif;">${i+1}</span>
+            <span style="flex:1; font-size:.85rem; color:#1a3a2a; font-family:'DM Sans',sans-serif; font-weight:500;">${b.name}</span>
+            <div style="width:${w}px; height:8px; background:${sc.dot}; border-radius:4px; opacity:.8;"></div>
+            <span class="chip" style="background:${sc.bg}; color:${sc.text}; font-size:.6rem;">${sc.label}</span>
+          </div>
+        `;
+      }).join('');
+
+      const threatColors = ["#c0392b","#e67e22","#f39c12","#8e44ad","#2980b9","#16a085","#27ae60"];
+      document.getElementById('dash-top-threats').innerHTML = THREATS.slice(0,7).map((t,i) => {
+        const w = 85 - i*10;
+        return `
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:${threatColors[i]}; flex-shrink:0;"></span>
+            <span style="flex:1; font-size:.78rem; color:#3a4040; font-family:'DM Sans',sans-serif;">${t}</span>
+            <div style="width:${w}px; height:6px; background:${threatColors[i]}; border-radius:3px; opacity:.7;"></div>
+          </div>
+        `;
+      }).join('');
+
+      const sampleZones = [
+        { n:"Bargi Dam Area", t:"Wetland" },
+        { n:"Khandari Reservoir", t:"Wetland" },
+        { n:"Dumna Nature Reserve", t:"Forest" },
+        { n:"Sail Parman Park", t:"Urban Park" },
+        { n:"Pisangari Hills", t:"Forest Hill" }
+      ];
+      document.getElementById('dash-zone-table').innerHTML = sampleZones.map((r,i) => `
+        <tr style="border-bottom:1px solid #f0ede8;">
+          <td style="padding:10px 12px; color:#7a8580; font-weight:600; font-size:.82rem; font-family:'DM Sans',sans-serif;">${i+1}</td>
+          <td style="padding:10px 12px; font-weight:500; color:#1a3a2a; font-size:.875rem; font-family:'DM Sans',sans-serif;">${r.n}</td>
+          <td style="padding:10px 12px; color:#7a8580; font-size:.82rem; font-family:'DM Sans',sans-serif;">${r.t}</td>
+          <td style="padding:10px 12px;"><span class="chip" style="background:#e9f7ef; color:#1e8449; font-size:.62rem;">Monitoring</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // Initialize all logic
+    renderHomeGrid();
+    renderBirdDirectory();
+    setupForm();
+    renderDashboard();
+
+  </script>
+</body>
+</html>
